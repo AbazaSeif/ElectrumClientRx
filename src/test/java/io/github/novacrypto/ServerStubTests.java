@@ -84,4 +84,11 @@ public final class ServerStubTests {
         assertEquals(new Response(2, "y").toString(), serverStub.output.readLine());
         assertEquals(new Response(1, "x").toString(), serverStub.output.readLine());
     }
+
+    @Test
+    public void canPutSomethingOnWireDirectly() throws IOException {
+        final ServerStub serverStub = new ServerStub();
+        serverStub.println(new Response(123, "a.response"));
+        assertEquals(new Response(123, "a.response").toString(), serverStub.output.readLine());
+    }
 }

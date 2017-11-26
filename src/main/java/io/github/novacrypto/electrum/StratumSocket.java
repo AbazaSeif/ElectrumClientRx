@@ -21,16 +21,39 @@
 
 package io.github.novacrypto.electrum;
 
+import com.google.gson.Gson;
+import io.reactivex.Single;
+import io.reactivex.functions.Function;
+
+import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.PrintWriter;
 
 public final class StratumSocket {
     private final PrintWriter out;
+    private final BufferedReader input;
 
-    public StratumSocket(final PrintWriter out) {
+    public StratumSocket(final PrintWriter out, final BufferedReader input) {
         this.out = out;
+        this.input = input;
     }
 
     public void send(final Command command) {
         out.println(command);
+    }
+
+    public Single<String> sendRx(final Command command) throws IOException {
+        send(command);
+        return Single.just(input.readLine());
+    }
+
+    public <Result> Single<Result> sendRx(final Command command, final Class<Result> clazz) throws IOException {
+        return sendRx(command)
+                .map(new Function<String, Result>() {
+                    @Override
+                    public Result apply(final String r) throws Exception {
+                        return new Gson().fromJson(r, clazz);
+                    }
+                });
     }
 }

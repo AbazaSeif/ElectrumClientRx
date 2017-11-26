@@ -79,6 +79,10 @@ class ServerStub {
 
     private List<CannedResponse> cannedResponses = new ArrayList<>();
 
+    void println(Object response) {
+        outputBuffer.printWriter.println(response);
+    }
+
     private class CannedResponse {
         final Predicate<Command> commandPredicate;
         final Function<Command, Object> map;
