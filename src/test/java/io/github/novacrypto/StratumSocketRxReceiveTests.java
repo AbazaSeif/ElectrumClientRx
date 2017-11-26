@@ -23,26 +23,14 @@ package io.github.novacrypto;
 
 import io.github.novacrypto.electrum.Command;
 import io.github.novacrypto.electrum.StratumSocket;
+import io.reactivex.Observable;
+import io.reactivex.Single;
 import io.reactivex.observers.TestObserver;
-import io.reactivex.plugins.RxJavaPlugins;
-import io.reactivex.schedulers.Schedulers;
-import org.junit.After;
-import org.junit.Before;
 import org.junit.Test;
 
 import java.io.IOException;
 
 public final class StratumSocketRxReceiveTests {
-
-    @Before
-    public void setup() {
-      //  RxJavaPlugins.setIoSchedulerHandler((s) -> Schedulers.trampoline());
-    }
-
-    @After
-    public void teardown() {
-        RxJavaPlugins.reset();
-    }
 
     @Test
     public void serverVersion() throws IOException, InterruptedException {
@@ -52,13 +40,21 @@ public final class StratumSocketRxReceiveTests {
                         c -> "{\"jsonrpc\": \"2.0\", \"id\": " + c.getId() + ", \"result\": \"ElectrumX 1.2\"}"
                 );
         final StratumSocket stratumSocket = new StratumSocket(serverStub.input, serverStub.output);
-        final TestObserver<String> test = stratumSocket.sendRx(Command.create(456, "server.version", "2.9.2", "0.10")).test();
 
-
-        Thread.sleep(1000);
-
-        test
+        testBlockingFirst(stratumSocket.sendRx(Command.create(456, "server.version", "2.9.2", "0.10")))
                 .assertValue("{\"jsonrpc\": \"2.0\", \"id\": 456, \"result\": \"ElectrumX 1.2\"}");
+    }
+
+    static <T> TestObserver<T> testBlockingFirst(Observable<T> stringObservable, int n) {
+        return Observable.fromIterable(
+                stringObservable
+                        .take(n)
+                        .blockingIterable()
+        ).test();
+    }
+
+    static <T> TestObserver<T> testBlockingFirst(Single<T> stringSingle) {
+        return testBlockingFirst(stringSingle.toObservable(), 1);
     }
 
     @Test
@@ -69,9 +65,9 @@ public final class StratumSocketRxReceiveTests {
                         c -> "{\"jsonrpc\": \"2.0\", \"id\": " + c.getId() + ", \"result\": \"ElectrumX 1.2\"}"
                 );
         final StratumSocket stratumSocket = new StratumSocket(serverStub.input, serverStub.output);
-        stratumSocket.sendRx(Command.create(123, "server.version", "2.9.2", "0.10")).test()
+        testBlockingFirst(stratumSocket.sendRx(Command.create(123, "server.version", "2.9.2", "0.10")))
                 .assertValue("{\"jsonrpc\": \"2.0\", \"id\": 123, \"result\": \"ElectrumX 1.2\"}");
-        stratumSocket.sendRx(Command.create(456, "server.version", "2.9.2", "0.10")).test()
+        testBlockingFirst(stratumSocket.sendRx(Command.create(456, "server.version", "2.9.2", "0.10")))
                 .assertValue("{\"jsonrpc\": \"2.0\", \"id\": 456, \"result\": \"ElectrumX 1.2\"}");
     }
 
@@ -83,10 +79,10 @@ public final class StratumSocketRxReceiveTests {
                         c -> "{\"jsonrpc\": \"2.0\", \"id\": " + c.getId() + ", \"result\": \"ElectrumX 1.2\"}"
                 );
         final StratumSocket stratumSocket = new StratumSocket(serverStub.input, serverStub.output);
-        stratumSocket.sendRx(Command.create(123, "server.version", "2.9.2", "0.10")).test()
+        testBlockingFirst(stratumSocket.sendRx(Command.create(123, "server.version", "2.9.2", "0.10")))
                 .assertValue("{\"jsonrpc\": \"2.0\", \"id\": 123, \"result\": \"ElectrumX 1.2\"}");
         serverStub.println("{\"jsonrpc\": \"2.0\", \"id\": 999, \"result\": \"ElectrumX 1.2\"}");
-        stratumSocket.sendRx(Command.create(456, "server.version", "2.9.2", "0.10")).test()
+        testBlockingFirst(stratumSocket.sendRx(Command.create(456, "server.version", "2.9.2", "0.10")))
                 .assertValue("{\"jsonrpc\": \"2.0\", \"id\": 456, \"result\": \"ElectrumX 1.2\"}");
     }
 }

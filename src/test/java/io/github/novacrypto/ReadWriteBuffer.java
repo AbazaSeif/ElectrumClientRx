@@ -29,6 +29,7 @@ class ReadWriteBuffer {
 
     private StringBuffer shared = new StringBuffer();
 
+    final Reader reader;
     final BufferedReader bufferedReader;
     final PrintWriter printWriter;
 
@@ -47,7 +48,7 @@ class ReadWriteBuffer {
             public void close() throws IOException {
             }
         });
-        bufferedReader = new BufferedReader(new Reader() {
+        reader = new Reader() {
             int pos;
 
             @Override
@@ -65,16 +66,12 @@ class ReadWriteBuffer {
             @Override
             public void close() throws IOException {
             }
-        });
+        };
+        bufferedReader = new BufferedReader(reader);
     }
 
-    public ReadWriteBuffer dontTerminateWhenEmpty() {
+    ReadWriteBuffer dontTerminateWhenEmpty() {
         end.set(0);
-        return this;
-    }
-
-    public ReadWriteBuffer terminateWhenEmpty() {
-        end.set(-1);
         return this;
     }
 }

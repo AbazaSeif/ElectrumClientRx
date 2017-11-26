@@ -75,7 +75,8 @@ class ServerStub {
         }
     }
 
-    final BufferedReader output = outputBuffer.bufferedReader;
+    final Reader output = outputBuffer.reader;
+    final BufferedReader outputBufferedReader = outputBuffer.bufferedReader;
 
     private List<CannedResponse> cannedResponses = new ArrayList<>();
 
@@ -96,9 +97,5 @@ class ServerStub {
     ServerStub when(Predicate<Command> commandPredicate, Function<Command, Object> map) {
         cannedResponses.add(new CannedResponse(commandPredicate, map));
         return this;
-    }
-
-    void teminateOutputStreamWhenEmpty() {
-        outputBuffer.terminateWhenEmpty();
     }
 }

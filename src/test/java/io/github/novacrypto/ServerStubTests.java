@@ -55,7 +55,7 @@ public final class ServerStubTests {
                         c -> new Response(c.getId(), "a.response")
                 );
         serverStub.input.println(Command.create(123, "a"));
-        assertEquals(new Response(123, "a.response").toString(), serverStub.output.readLine());
+        assertEquals(new Response(123, "a.response").toString(), serverStub.outputBufferedReader.readLine());
     }
 
     @Test
@@ -66,7 +66,8 @@ public final class ServerStubTests {
                         c -> "{\"id\":1,\"method\":\"blockchain.numblocks.subscribe\",\"params\":[]}"
                 );
         serverStub.input.println(Command.create(123, "a"));
-        assertEquals("{\"id\":1,\"method\":\"blockchain.numblocks.subscribe\",\"params\":[]}", serverStub.output.readLine());
+        assertEquals("{\"id\":1,\"method\":\"blockchain.numblocks.subscribe\",\"params\":[]}",
+                serverStub.outputBufferedReader.readLine());
     }
 
     @Test
@@ -81,14 +82,14 @@ public final class ServerStubTests {
                 );
         serverStub.input.println(Command.create(2, "a"));
         serverStub.input.println(Command.create(1, "a"));
-        assertEquals(new Response(2, "y").toString(), serverStub.output.readLine());
-        assertEquals(new Response(1, "x").toString(), serverStub.output.readLine());
+        assertEquals(new Response(2, "y").toString(), serverStub.outputBufferedReader.readLine());
+        assertEquals(new Response(1, "x").toString(), serverStub.outputBufferedReader.readLine());
     }
 
     @Test
     public void canPutSomethingOnWireDirectly() throws IOException {
         final ServerStub serverStub = new ServerStub();
         serverStub.println(new Response(123, "a.response"));
-        assertEquals(new Response(123, "a.response").toString(), serverStub.output.readLine());
+        assertEquals(new Response(123, "a.response").toString(), serverStub.outputBufferedReader.readLine());
     }
 }
