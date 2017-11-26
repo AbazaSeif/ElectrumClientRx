@@ -22,8 +22,15 @@
 package io.github.novacrypto.electrum;
 
 import com.google.gson.Gson;
+import io.reactivex.Observable;
+import io.reactivex.ObservableEmitter;
+import io.reactivex.ObservableOnSubscribe;
 import io.reactivex.Single;
+import io.reactivex.disposables.CompositeDisposable;
+import io.reactivex.functions.Consumer;
 import io.reactivex.functions.Function;
+import io.reactivex.observables.ConnectableObservable;
+import io.reactivex.schedulers.Schedulers;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -32,11 +39,57 @@ import java.io.PrintWriter;
 public final class StratumSocket {
     private final PrintWriter out;
     private final BufferedReader input;
+    private final Observable<String> feed;
+    private final CompositeDisposable rx = new CompositeDisposable();
 
     public StratumSocket(final PrintWriter out, final BufferedReader input) {
         this.out = out;
         this.input = input;
+        final ConnectableObservable<String> from = from(input);
+        feed = from;
+
+        feed.subscribe(
+                new Consumer<String>() {
+                    @Override
+                    public void accept(final String s) throws Exception {
+                        System.out.println(s);
+                    }
+                },
+                new Consumer<Throwable>() {
+                    @Override
+                    public void accept(final Throwable s) throws Exception {
+                        System.out.println(s);
+                    }
+                }
+        );
+
+        rx.add(from.connect());
     }
+
+    public static ConnectableObservable<String> from(final BufferedReader reader) {
+        final ObservableOnSubscribe<String> tObservableOnSubscribe = new ObservableOnSubscribe<String>() {
+            @Override
+            public void subscribe(final ObservableEmitter<String> subscriber) {
+                try {
+                    System.out.println("Creating a subscriber");
+                    String line;
+                    while (!subscriber.isDisposed() && (line = reader.readLine()) != null) {
+                        System.out.println("Read with RX :" + line + " Thread " + Thread.currentThread().getName());
+                        subscriber.onNext(line);
+                    }
+                } catch (final IOException e) {
+                    subscriber.onError(e);
+                }
+                System.out.println("Completed");
+                subscriber.onComplete();
+            }
+        };
+        return Observable
+                .create(tObservableOnSubscribe)
+                .subscribeOn(Schedulers.io())
+                .publish();
+    }
+
 
     public void send(final Command command) {
         out.println(command);
@@ -44,7 +97,13 @@ public final class StratumSocket {
 
     public Single<String> sendRx(final Command command) throws IOException {
         send(command);
-        return Single.just(input.readLine());
+        return Single.fromObservable(feed.take(1))
+                .doOnSuccess(new Consumer<String>() {
+                    @Override
+                    public void accept(String s) throws Exception {
+                        System.out.println("s: " + s);
+                    }
+                });
     }
 
     public <Result> Single<Result> sendRx(final Command command, final Class<Result> clazz) throws IOException {

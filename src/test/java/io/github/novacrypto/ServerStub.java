@@ -32,7 +32,7 @@ import java.util.function.Predicate;
 
 class ServerStub {
 
-    private final ReadWriteBuffer outputBuffer = new ReadWriteBuffer();
+    private final ReadWriteBuffer outputBuffer = new ReadWriteBuffer().dontTerminateWhenEmpty();
 
     final PrintWriter input = new PrintWriter(new Writer() {
 
@@ -96,5 +96,9 @@ class ServerStub {
     ServerStub when(Predicate<Command> commandPredicate, Function<Command, Object> map) {
         cannedResponses.add(new CannedResponse(commandPredicate, map));
         return this;
+    }
+
+    void teminateOutputStreamWhenEmpty() {
+        outputBuffer.terminateWhenEmpty();
     }
 }
