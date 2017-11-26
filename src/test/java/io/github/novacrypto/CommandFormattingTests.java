@@ -29,6 +29,30 @@ import static org.junit.Assert.assertEquals;
 public final class CommandFormattingTests {
 
     @Test
+    public void canReadMethod_a() {
+        assertEquals("a",
+                Command.create(0, "a").getMethod());
+    }
+
+    @Test
+    public void canReadMethod_b() {
+        assertEquals("b",
+                Command.create(0, "b").getMethod());
+    }
+
+    @Test
+    public void canReadId0() {
+        assertEquals(0,
+                Command.create(0, "a").getId());
+    }
+
+    @Test
+    public void canReadId1() {
+        assertEquals(1,
+                Command.create(1, "a").getId());
+    }
+
+    @Test
     public void canFormatCommandZeroArgs() {
         assertEquals("{\"id\":0,\"method\":\"a\",\"params\":[]}",
                 Command.create(0, "a").toString());

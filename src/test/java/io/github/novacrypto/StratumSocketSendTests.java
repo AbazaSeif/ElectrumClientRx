@@ -25,7 +25,7 @@ import io.github.novacrypto.electrum.Command;
 import io.github.novacrypto.electrum.StratumSocket;
 import org.junit.Test;
 
-public final class StratumSocketTests {
+public final class StratumSocketSendTests {
 
     @Test
     public void canSendCommand() {

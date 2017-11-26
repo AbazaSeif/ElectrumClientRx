@@ -43,6 +43,14 @@ public final class Command {
         return new Command(id, method, params);
     }
 
+    public int getId() {
+        return id;
+    }
+
+    public String getMethod() {
+        return method;
+    }
+
     @Override
     public String toString() {
         return new Gson().toJson(this);
