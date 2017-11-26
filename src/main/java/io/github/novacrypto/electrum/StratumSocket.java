@@ -25,6 +25,7 @@ import io.reactivex.Observable;
 import io.reactivex.ObservableEmitter;
 import io.reactivex.ObservableOnSubscribe;
 import io.reactivex.Single;
+import io.reactivex.functions.Predicate;
 import io.reactivex.schedulers.Schedulers;
 
 import java.io.BufferedReader;
@@ -70,13 +71,12 @@ public final class StratumSocket {
 
     public Single<String> sendRx(final Command command) throws IOException {
         send(command);
-        return Single.fromObservable(feed.take(1));
-//                .doOnSuccess(new Consumer<String>() {
-//                    @Override
-//                    public void accept(final String s) throws Exception {
-//                        System.out.println("s: " + s);
-//                    }
-//                });
+        return Single.fromObservable(feed.filter(new Predicate<String>() {
+            @Override
+            public boolean test(String s) throws Exception {
+                return s.contains("" + command.getId());
+            }
+        }).take(1));
     }
 
 //    public <Result> Single<Result> sendRx(final Command command, final Class<Result> clazz) throws IOException {
