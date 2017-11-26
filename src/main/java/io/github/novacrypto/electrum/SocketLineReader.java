@@ -21,45 +21,38 @@
 
 package io.github.novacrypto.electrum;
 
-import com.google.gson.Gson;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.Socket;
+import java.util.concurrent.atomic.AtomicBoolean;
 
-public final class Command {
-    private final int id;
-    private final String method;
-    private final Object[] params;
+public final class SocketLineReader implements LineReader {
 
-    private Command(final int id, final String method, final Object[] params) {
-        this.id = id;
-        this.method = method;
-        this.params = params;
-    }
+    private final Socket socket;
+    private final AtomicBoolean closing = new AtomicBoolean();
+    private final BufferedReader reader;
 
-    public static Command create(
-            final int id,
-            final String method,
-            final Object... params
-    ) {
-        return new Command(id, method, params);
-    }
-
-    public int getId() {
-        return id;
-    }
-
-    public String getMethod() {
-        return method;
-    }
-
-    public Object getParam(int i) {
-        return params[i];
-    }
-
-    public int getParamCount() {
-        return params.length;
+    public SocketLineReader(final Socket socket) throws IOException {
+        this.socket = socket;
+        reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
     }
 
     @Override
-    public String toString() {
-        return new Gson().toJson(this);
+    public String readLine() throws IOException {
+        try {
+            return reader.readLine();
+        } catch (final IOException e) {
+            if (closing.get()) {
+                return null;
+            }
+            throw e;
+        }
+    }
+
+    @Override
+    public void close() throws Exception {
+        closing.set(true);
+        socket.close();
     }
 }

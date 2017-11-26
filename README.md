@@ -2,18 +2,11 @@
 
 # Install
 
-Use either of these repositories:
+Use these repositories:
 
 ```
 repositories {
     jcenter()
-}
-```
-
-Or:
-
-```
-repositories {
     maven {
         url 'https://dl.bintray.com/novacrypto/Electrum/'
     }
@@ -24,7 +17,7 @@ Add dependency:
 
 ```
 dependencies {
-    compile 'io.github.novacrypto:ElectrumClientRx:0.0.1@jar'
+    compile 'io.github.novacrypto:ElectrumClientRx:0.0.1'
 }
 
 ```

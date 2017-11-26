@@ -22,12 +22,17 @@
 package io.github.novacrypto;
 
 import java.io.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 class ReadWriteBuffer {
+    private final AtomicInteger end = new AtomicInteger(-1);
+
     private StringBuffer shared = new StringBuffer();
 
+    final Reader reader;
     final BufferedReader bufferedReader;
     final PrintWriter printWriter;
+    private IOException throwable;
 
     ReadWriteBuffer() {
         printWriter = new PrintWriter(new Writer() {
@@ -44,13 +49,16 @@ class ReadWriteBuffer {
             public void close() throws IOException {
             }
         });
-        bufferedReader = new BufferedReader(new Reader() {
+        reader = new Reader() {
             int pos;
 
             @Override
             public int read(char[] cbuf, int off, int len) throws IOException {
+                if (throwable != null) {
+                    throw throwable;
+                }
                 if (pos >= shared.length()) {
-                    return -1;
+                    return end.get();
                 }
                 int end = Math.min(pos + len, shared.length());
                 shared.getChars(pos, end, cbuf, off);
@@ -62,6 +70,16 @@ class ReadWriteBuffer {
             @Override
             public void close() throws IOException {
             }
-        });
+        };
+        bufferedReader = new BufferedReader(reader);
+    }
+
+    ReadWriteBuffer dontTerminateWhenEmpty() {
+        end.set(0);
+        return this;
+    }
+
+    public void kill(IOException throwable) {
+        this.throwable = throwable;
     }
 }

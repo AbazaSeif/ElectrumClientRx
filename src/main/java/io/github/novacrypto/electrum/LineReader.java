@@ -21,45 +21,13 @@
 
 package io.github.novacrypto.electrum;
 
-import com.google.gson.Gson;
+import java.io.IOException;
 
-public final class Command {
-    private final int id;
-    private final String method;
-    private final Object[] params;
-
-    private Command(final int id, final String method, final Object[] params) {
-        this.id = id;
-        this.method = method;
-        this.params = params;
-    }
-
-    public static Command create(
-            final int id,
-            final String method,
-            final Object... params
-    ) {
-        return new Command(id, method, params);
-    }
-
-    public int getId() {
-        return id;
-    }
-
-    public String getMethod() {
-        return method;
-    }
-
-    public Object getParam(int i) {
-        return params[i];
-    }
-
-    public int getParamCount() {
-        return params.length;
-    }
-
-    @Override
-    public String toString() {
-        return new Gson().toJson(this);
-    }
+public interface LineReader extends AutoCloseable {
+    /**
+     * Blocking
+     *
+     * @return string when new one found, null at eos
+     */
+    String readLine() throws IOException;
 }

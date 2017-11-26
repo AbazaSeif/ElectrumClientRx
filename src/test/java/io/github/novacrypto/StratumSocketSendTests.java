@@ -22,12 +22,11 @@
 package io.github.novacrypto;
 
 import io.github.novacrypto.electrum.Command;
+import io.github.novacrypto.electrum.LineReader;
 import io.github.novacrypto.electrum.StratumSocket;
 import org.junit.Test;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.Reader;
 
 public final class StratumSocketSendTests {
 
@@ -35,22 +34,21 @@ public final class StratumSocketSendTests {
     public void canSendCommand() {
         OutputSpy outputSpy = new OutputSpy();
         Command command = Command.create(1, "hello.world");
-        new StratumSocket(outputSpy.printWriter, fakeBufferedReader()).send(command);
+        new StratumSocket(outputSpy.printWriter, fakeLineReader()).send(command);
         outputSpy.assertFullOutputEquals(command);
     }
 
-    private BufferedReader fakeBufferedReader() {
-        return new BufferedReader(new Reader() {
+    private LineReader fakeLineReader() {
+        return new LineReader() {
             @Override
-            public int read(char[] cbuf, int off, int len) throws IOException {
-                return 0;
+            public String readLine() throws IOException {
+                return null;
             }
 
             @Override
-            public void close() throws IOException {
-
+            public void close() throws Exception {
             }
-        });
+        };
     }
 
     @Test
@@ -58,7 +56,7 @@ public final class StratumSocketSendTests {
         OutputSpy outputSpy = new OutputSpy();
         Command command0 = Command.create(0, "hello");
         Command command1 = Command.create(1, "world");
-        StratumSocket stratumSocket = new StratumSocket(outputSpy.printWriter, fakeBufferedReader());
+        StratumSocket stratumSocket = new StratumSocket(outputSpy.printWriter, fakeLineReader());
         stratumSocket.send(command0);
         stratumSocket.send(command1);
         outputSpy.assertFullOutputEquals(command0, command1);
