@@ -93,18 +93,23 @@ public final class StratumSocket {
         }
     }
 
-    public Single<String> sendRx(final Command command) throws IOException {
-        send(command);
+    private Single<Response> responseForId(final int id) {
         return Single.fromObservable(feed.filter(new Predicate<Response>() {
             @Override
-            public boolean test(final Response r) throws Exception {
-                return r.id == command.getId();
-            }
-        }).map(new Function<Response, String>() {
-            @Override
-            public String apply(final Response response) throws Exception {
-                return response.json;
+            public boolean test(final Response r) {
+                return r.id == id;
             }
         }).take(1));
+    }
+
+    public Single<String> sendRx(final Command command) {
+        send(command);
+        return responseForId(command.getId())
+                .map(new Function<Response, String>() {
+                    @Override
+                    public String apply(final Response response) {
+                        return response.json;
+                    }
+                });
     }
 }
