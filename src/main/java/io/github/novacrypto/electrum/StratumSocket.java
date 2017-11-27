@@ -21,10 +21,12 @@
 
 package io.github.novacrypto.electrum;
 
+import com.google.gson.Gson;
 import io.reactivex.Observable;
 import io.reactivex.ObservableEmitter;
 import io.reactivex.ObservableOnSubscribe;
 import io.reactivex.Single;
+import io.reactivex.functions.Function;
 import io.reactivex.functions.Predicate;
 import io.reactivex.schedulers.Schedulers;
 
@@ -35,11 +37,19 @@ import java.io.Reader;
 
 public final class StratumSocket {
     private final PrintWriter out;
-    private final Observable<String> feed;
+    private final Observable<Response> feed;
 
     public StratumSocket(final PrintWriter out, final Reader input) {
         this.out = out;
-        feed = observeReader(new BufferedReader(input));
+        feed = observeReader(new BufferedReader(input))
+                .map(new Function<String, Response>() {
+                    @Override
+                    public Response apply(final String json) throws Exception {
+                        final ResponseDTO rdto = new Gson().fromJson(json, ResponseDTO.class);
+
+                        return new Response(rdto.id, json);
+                    }
+                });
     }
 
     private static Observable<String> observeReader(final BufferedReader reader) {
@@ -69,23 +79,32 @@ public final class StratumSocket {
         out.println(command);
     }
 
+    private class ResponseDTO {
+        int id;
+    }
+
+    private class Response {
+        final int id;
+        final String json;
+
+        Response(final int id, final String json) {
+            this.id = id;
+            this.json = json;
+        }
+    }
+
     public Single<String> sendRx(final Command command) throws IOException {
         send(command);
-        return Single.fromObservable(feed.filter(new Predicate<String>() {
+        return Single.fromObservable(feed.filter(new Predicate<Response>() {
             @Override
-            public boolean test(String s) throws Exception {
-                return s.contains("" + command.getId());
+            public boolean test(final Response r) throws Exception {
+                return r.id == command.getId();
+            }
+        }).map(new Function<Response, String>() {
+            @Override
+            public String apply(final Response response) throws Exception {
+                return response.json;
             }
         }).take(1));
     }
-
-//    public <Result> Single<Result> sendRx(final Command command, final Class<Result> clazz) throws IOException {
-//        return sendRx(command)
-//                .map(new Function<String, Result>() {
-//                    @Override
-//                    public Result apply(final String r) throws Exception {
-//                        return new Gson().fromJson(r, clazz);
-//                    }
-//                });
-//    }
 }
