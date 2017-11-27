@@ -34,10 +34,12 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.Reader;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public final class StratumSocket {
     private final PrintWriter out;
     private final Observable<Response> feed;
+    private final AtomicInteger id = new AtomicInteger();
 
     public StratumSocket(final PrintWriter out, final Reader input) {
         this.out = out;
@@ -109,6 +111,18 @@ public final class StratumSocket {
                     @Override
                     public String apply(final Response response) {
                         return response.json;
+                    }
+                });
+    }
+
+    public <Result> Single<Result> sendRx(final Class<Result> clazz, final String method, final Object... params) {
+        final Command command = Command.create(id.getAndIncrement(), method, params);
+        send(command);
+        return responseForId(command.getId())
+                .map(new Function<Response, Result>() {
+                    @Override
+                    public Result apply(final Response response) {
+                        return new Gson().fromJson(response.json, clazz);
                     }
                 });
     }

@@ -58,7 +58,7 @@ public final class StratumSocketRxReceiveTests {
     }
 
     @Test
-    public void serverVersion2Calls() throws IOException {
+    public void serverVersion2Calls() {
         final ServerStub serverStub = new ServerStub()
                 .when(
                         c -> c.getMethod().equals("server.version"),
@@ -72,7 +72,7 @@ public final class StratumSocketRxReceiveTests {
     }
 
     @Test
-    public void serverVersion2CallsSomethingElsePushedOnWire() throws IOException {
+    public void serverVersion2CallsSomethingElsePushedOnWire() {
         final ServerStub serverStub = new ServerStub()
                 .when(
                         c -> c.getMethod().equals("server.version"),
@@ -87,7 +87,7 @@ public final class StratumSocketRxReceiveTests {
     }
 
     @Test
-    public void serverVersion2CallsSomethingElsePushedOnWire2() throws IOException {
+    public void serverVersion2CallsSomethingElsePushedOnWire2() {
         final ServerStub serverStub = new ServerStub()
                 .when(
                         c -> c.getMethod().equals("server.version"),
@@ -99,5 +99,53 @@ public final class StratumSocketRxReceiveTests {
         serverStub.println("{\"jsonrpc\": \"2.0\", \"id\": 4567, \"result\": \"ElectrumX 1.2\"}");
         testBlockingFirst(stratumSocket.sendRx(Command.create(456, "server.version", "2.9.2", "0.10")))
                 .assertValue("{\"jsonrpc\": \"2.0\", \"id\": 456, \"result\": \"ElectrumX 1.2\"}");
+    }
+
+    class ServerVersion {
+        String result;
+    }
+
+    @Test
+    public void serverVersionTyped() {
+        final ServerStub serverStub = new ServerStub()
+                .when(
+                        c -> c.getMethod().equals("server.version"),
+                        c -> "{\"jsonrpc\": \"2.0\", \"id\": " + c.getId() + ", \"result\": \"ElectrumX 1.2\"}"
+                );
+        final StratumSocket stratumSocket = new StratumSocket(serverStub.input, serverStub.output);
+        testBlockingFirst(stratumSocket.sendRx(ServerVersion.class, "server.version", "2.9.2", 10))
+                .assertValue(v -> v.result.equals("ElectrumX 1.2"));
+    }
+
+    @Test
+    public void sendRxAcceptsObjects() {
+        final ServerStub serverStub = new ServerStub()
+                .when(
+                        c -> c.getMethod().equals("server.version") &&
+                                c.getParam(0).equals("2.9.2") &&
+                                ((Double) c.getParam(1)).intValue() == 10,
+                        c -> "{\"jsonrpc\": \"2.0\", \"id\": " + c.getId() + ", \"result\": \"ElectrumX 1.2\"}"
+                );
+        final StratumSocket stratumSocket = new StratumSocket(serverStub.input, serverStub.output);
+        testBlockingFirst(stratumSocket.sendRx(ServerVersion.class, "server.version", "2.9.2", 10))
+                .assertValue(v -> v.result.equals("ElectrumX 1.2"));
+    }
+
+    @Test
+    public void idIsAutomaticallyIncremented() {
+        final ServerStub serverStub = new ServerStub()
+                .when(
+                        c -> c.getMethod().equals("server.version") && c.getId() == 0,
+                        c -> "{\"jsonrpc\": \"2.0\", \"id\": " + c.getId() + ", \"result\": \"ElectrumX 1.2\"}"
+                )
+                .when(
+                        c -> c.getMethod().equals("server.version") && c.getId() == 1,
+                        c -> "{\"jsonrpc\": \"2.0\", \"id\": " + c.getId() + ", \"result\": \"ElectrumX 2.3\"}"
+                );
+        final StratumSocket stratumSocket = new StratumSocket(serverStub.input, serverStub.output);
+        testBlockingFirst(stratumSocket.sendRx(ServerVersion.class, "server.version", "2.9.2", "0.10"))
+                .assertValue(v -> v.result.equals("ElectrumX 1.2"));
+        testBlockingFirst(stratumSocket.sendRx(ServerVersion.class, "server.version", "2.9.2", "0.10"))
+                .assertValue(v -> v.result.equals("ElectrumX 2.3"));
     }
 }

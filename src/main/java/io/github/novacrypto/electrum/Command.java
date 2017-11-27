@@ -23,7 +23,6 @@ package io.github.novacrypto.electrum;
 
 import com.google.gson.Gson;
 
-@SuppressWarnings({"FieldCanBeLocal", "unused"})
 public final class Command {
     private final int id;
     private final String method;
@@ -49,6 +48,14 @@ public final class Command {
 
     public String getMethod() {
         return method;
+    }
+
+    public Object getParam(int i) {
+        return params[i];
+    }
+
+    public int getParamCount() {
+        return params.length;
     }
 
     @Override
