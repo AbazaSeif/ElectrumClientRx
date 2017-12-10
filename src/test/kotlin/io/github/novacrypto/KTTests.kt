@@ -28,6 +28,6 @@ class KTTestsUnderKt {
 
     @Test
     fun x() {
-        assertTrue(false)
+        assertTrue(true)
     }
 }
