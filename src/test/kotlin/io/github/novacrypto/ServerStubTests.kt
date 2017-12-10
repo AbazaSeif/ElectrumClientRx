@@ -39,37 +39,34 @@ class ServerStubTests {
     }
 
     @Test
-    @Throws(IOException::class)
     fun canSetupAResponse() {
-        val serverStub = ServerStub()
-                .on(
-                        { c -> c.method == "a" }
-                ) { c -> Response(c.id, "a.response") }
+        val serverStub = serverStub {
+            on { c -> c.method == "a" } returns
+                    { c -> Response(c.id, "a.response") }
+        }
         serverStub.input.println(Command.create(123, "a"))
         assertEquals(Response(123, "a.response").toString(), serverStub.outputBufferedReader.readLine())
     }
 
     @Test
-    @Throws(IOException::class)
     fun canSetupAResponseWithStringDirect() {
-        val serverStub = ServerStub()
-                .on(
-                        { c -> c.method == "a" }
-                ) { c -> "{\"id\":1,\"method\":\"blockchain.numblocks.subscribe\",\"params\":[]}" }
+        val serverStub = serverStub {
+            on { c -> c.method == "a" } returns
+                    { c -> "{\"id\":1,\"method\":\"blockchain.numblocks.subscribe\",\"params\":[]}" }
+        }
         serverStub.input.println(Command.create(123, "a"))
         assertEquals("{\"id\":1,\"method\":\"blockchain.numblocks.subscribe\",\"params\":[]}",
                 serverStub.outputBufferedReader.readLine())
     }
 
     @Test
-    @Throws(IOException::class)
     fun canSetupTwoResponses() {
-        val serverStub = ServerStub()
-                .on(
-                        { c -> c.id == 1 }
-                ) { c -> Response(c.id, "x") }.on(
-                { c -> c.id == 2 }
-        ) { c -> Response(c.id, "y") }
+        val serverStub = serverStub {
+            on { c -> c.id == 1 } returns
+                    { c -> Response(c.id, "x") }
+            on { c -> c.id == 2 } returns
+                    { c -> Response(c.id, "y") }
+        }
         serverStub.input.println(Command.create(2, "a"))
         serverStub.input.println(Command.create(1, "a"))
         assertEquals(Response(2, "y").toString(), serverStub.outputBufferedReader.readLine())
@@ -77,7 +74,6 @@ class ServerStubTests {
     }
 
     @Test
-    @Throws(IOException::class)
     fun canPutSomethingOnWireDirectly() {
         val serverStub = ServerStub()
         serverStub.printlnOnOutput(Response(123, "a.response"))

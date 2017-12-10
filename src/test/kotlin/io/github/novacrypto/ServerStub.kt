@@ -23,21 +23,19 @@ package io.github.novacrypto
 
 import com.google.gson.Gson
 import io.github.novacrypto.electrum.Command
-import java.io.IOException
-import java.io.PrintWriter
-import java.io.StringWriter
-import java.io.Writer
+import java.io.*
 import java.util.*
 
-class ServerStub : SetUp {
+class ServerStub {
+
     private val outputBuffer = ReadWriteBuffer().dontTerminateWhenEmpty()
 
     private class C : Iterator<String> {
 
         private var processed: Int = 0
-
         private var nextIndex: Int = -1
         private var nextCommand: String = ""
+
         val stringWriter = StringWriter()
 
         override fun hasNext(): Boolean {
@@ -85,7 +83,7 @@ class ServerStub : SetUp {
         val c = Gson().fromJson(command, Command::class.java)
         for (can in cannedResponses) {
             if (can.commandPredicate(c)) {
-                val r = can.map(c)
+                val r = can.resultFactory(c)
                 println("ServerStub: Response: '$r'")
                 printlnOnOutput(r)
                 return
@@ -93,9 +91,9 @@ class ServerStub : SetUp {
         }
     }
 
-    val output = outputBuffer.reader
+    val output: Reader = outputBuffer.reader
+    val outputBufferedReader: BufferedReader = outputBuffer.bufferedReader
 
-    val outputBufferedReader = outputBuffer.bufferedReader
     private val cannedResponses = ArrayList<CannedResponse>()
 
     fun printlnOnOutput(response: Any) {
@@ -104,31 +102,29 @@ class ServerStub : SetUp {
 
     private class CannedResponse(
             val commandPredicate: (Command) -> Boolean,
-            val map: (Command) -> Any
+            val resultFactory: (Command) -> Any
     )
 
-    override fun add(pair: Pair<(Command) -> Boolean, (Command) -> Any>) {
-        on(pair.first, pair.second)
+    private fun mapToResult(commandPredicate: (Command) -> Boolean, resultFactory: (Command) -> Any) {
+        cannedResponses.add(CannedResponse(commandPredicate, resultFactory))
     }
 
-    fun on(commandPredicate: (Command) -> Boolean, map: (Command) -> Any): ServerStub {
-        cannedResponses.add(CannedResponse(commandPredicate, map))
-        return this
+    inner class PartialResultMap(private val commandPredicate: (Command) -> Boolean) {
+        internal fun _returns(result: (Command) -> Any) =
+                mapToResult(this.commandPredicate, result)
     }
+
+    inner class InnerSetUp {
+        internal fun _on(commandPredicate: (Command) -> Boolean): ServerStub.PartialResultMap = PartialResultMap(commandPredicate)
+    }
+
+    fun newSetup() = InnerSetUp()
 }
 
-class PreSetUp(val setup: SetUp, val commandPredicate: (Command) -> Boolean)
+infix fun ServerStub.PartialResultMap.returns(result: (Command) -> Any) = this._returns(result)
 
-infix fun PreSetUp.returns(result: (Command) -> Any) =
-        setup.add(this.commandPredicate to result)
 
-interface SetUp {
-    fun on(commandPredicate: (Command) -> Boolean): PreSetUp {
-        return PreSetUp(this, commandPredicate)
-    }
+fun ServerStub.InnerSetUp.on(commandPredicate: (Command) -> Boolean) = this._on(commandPredicate)
 
-    fun add(pair: Pair<(Command) -> Boolean, (Command) -> Any>)
-}
-
-fun serverStub(action: SetUp.() -> Unit): ServerStub =
-        ServerStub().apply(action)
+fun serverStub(setup: ServerStub.InnerSetUp.() -> Unit): ServerStub =
+        ServerStub().apply { newSetup().apply(setup) }
