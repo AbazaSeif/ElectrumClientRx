@@ -33,7 +33,6 @@ import java.io.IOException
 class StratumSocketRxReceiveTests {
 
     @Test
-    @Throws(IOException::class, InterruptedException::class)
     fun serverVersion() {
         val serverStub = ServerStub()
                 .`when`(
@@ -71,7 +70,7 @@ class StratumSocketRxReceiveTests {
         val stratumSocket = givenSocket(serverStub)
         testBlockingFirst(stratumSocket.sendRx(Command.create(123, "server.version", "2.9.2", "0.10")))
                 .assertValue("{\"jsonrpc\": \"2.0\", \"id\": 123, \"result\": \"ElectrumX 1.2\"}")
-        serverStub.println("{\"jsonrpc\": \"2.0\", \"id\": 999, \"result\": \"ElectrumX 1.2\"}")
+        serverStub.printlnOnOutput("{\"jsonrpc\": \"2.0\", \"id\": 999, \"result\": \"ElectrumX 1.2\"}")
         testBlockingFirst(stratumSocket.sendRx(Command.create(456, "server.version", "2.9.2", "0.10")))
                 .assertValue("{\"jsonrpc\": \"2.0\", \"id\": 456, \"result\": \"ElectrumX 1.2\"}")
     }
@@ -85,7 +84,7 @@ class StratumSocketRxReceiveTests {
         val stratumSocket = givenSocket(serverStub)
         testBlockingFirst(stratumSocket.sendRx(Command.create(123, "server.version", "2.9.2", "0.10")))
                 .assertValue("{\"jsonrpc\": \"2.0\", \"id\": 123, \"result\": \"ElectrumX 1.2\"}")
-        serverStub.println("{\"jsonrpc\": \"2.0\", \"id\": 4567, \"result\": \"ElectrumX 1.2\"}")
+        serverStub.printlnOnOutput("{\"jsonrpc\": \"2.0\", \"id\": 4567, \"result\": \"ElectrumX 1.2\"}")
         testBlockingFirst(stratumSocket.sendRx(Command.create(456, "server.version", "2.9.2", "0.10")))
                 .assertValue("{\"jsonrpc\": \"2.0\", \"id\": 456, \"result\": \"ElectrumX 1.2\"}")
     }
