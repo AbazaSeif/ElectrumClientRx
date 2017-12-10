@@ -29,16 +29,15 @@ import java.io.StringWriter
 import java.io.Writer
 import java.util.*
 
-class ServerStub {
-
+class ServerStub : SetUp {
     private val outputBuffer = ReadWriteBuffer().dontTerminateWhenEmpty()
 
     private class C : Iterator<String> {
 
         private var processed: Int = 0
+
         private var nextIndex: Int = -1
         private var nextCommand: String = ""
-
         val stringWriter = StringWriter()
 
         override fun hasNext(): Boolean {
@@ -95,8 +94,8 @@ class ServerStub {
     }
 
     val output = outputBuffer.reader
-    val outputBufferedReader = outputBuffer.bufferedReader
 
+    val outputBufferedReader = outputBuffer.bufferedReader
     private val cannedResponses = ArrayList<CannedResponse>()
 
     fun printlnOnOutput(response: Any) {
@@ -108,8 +107,28 @@ class ServerStub {
             val map: (Command) -> Any
     )
 
+    override fun add(pair: Pair<(Command) -> Boolean, (Command) -> Any>) {
+        on(pair.first, pair.second)
+    }
+
     fun on(commandPredicate: (Command) -> Boolean, map: (Command) -> Any): ServerStub {
         cannedResponses.add(CannedResponse(commandPredicate, map))
         return this
     }
 }
+
+class PreSetUp(val setup: SetUp, val commandPredicate: (Command) -> Boolean)
+
+infix fun PreSetUp.returns(result: (Command) -> Any) =
+        setup.add(this.commandPredicate to result)
+
+interface SetUp {
+    fun on(commandPredicate: (Command) -> Boolean): PreSetUp {
+        return PreSetUp(this, commandPredicate)
+    }
+
+    fun add(pair: Pair<(Command) -> Boolean, (Command) -> Any>)
+}
+
+fun serverStub(action: SetUp.() -> Unit): ServerStub =
+        ServerStub().apply(action)

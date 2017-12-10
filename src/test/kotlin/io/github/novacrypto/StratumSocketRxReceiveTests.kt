@@ -32,10 +32,10 @@ class StratumSocketRxReceiveTests {
 
     @Test
     fun serverVersion() {
-        val serverStub = ServerStub()
-                .on(
-                        { c -> c.method == "server.version" }
-                ) { c -> "{\"jsonrpc\": \"2.0\", \"id\": " + c.id + ", \"result\": \"ElectrumX 1.2\"}" }
+        val serverStub = serverStub {
+            on { c -> c.method == "server.version" } returns
+                    { c -> "{\"jsonrpc\": \"2.0\", \"id\": " + c.id + ", \"result\": \"ElectrumX 1.2\"}" }
+        }
         givenSocket(serverStub).sendRx(Command.create(456, "server.version", "2.9.2", "0.10"))
                 .testBlockingFirst()
                 .assertValue("{\"jsonrpc\": \"2.0\", \"id\": 456, \"result\": \"ElectrumX 1.2\"}")
@@ -47,10 +47,10 @@ class StratumSocketRxReceiveTests {
 
     @Test
     fun serverVersion2Calls() {
-        val serverStub = ServerStub()
-                .on(
-                        { c -> c.method == "server.version" }
-                ) { c -> "{\"jsonrpc\": \"2.0\", \"id\": " + c.id + ", \"result\": \"ElectrumX 1.2\"}" }
+        val serverStub = serverStub {
+            on { c -> c.method == "server.version" } returns
+                    { c -> "{\"jsonrpc\": \"2.0\", \"id\": " + c.id + ", \"result\": \"ElectrumX 1.2\"}" }
+        }
         val stratumSocket = givenSocket(serverStub)
         stratumSocket.sendRx(Command.create(123, "server.version", "2.9.2", "0.10"))
                 .testBlockingFirst()
@@ -62,10 +62,10 @@ class StratumSocketRxReceiveTests {
 
     @Test
     fun serverVersion2CallsSomethingElsePushedOnWire() {
-        val serverStub = ServerStub()
-                .on(
-                        { c -> c.method == "server.version" }
-                ) { c -> "{\"jsonrpc\": \"2.0\", \"id\": " + c.id + ", \"result\": \"ElectrumX 1.2\"}" }
+        val serverStub = serverStub {
+            on { c -> c.method == "server.version" } returns
+                    { c -> "{\"jsonrpc\": \"2.0\", \"id\": " + c.id + ", \"result\": \"ElectrumX 1.2\"}" }
+        }
         val stratumSocket = givenSocket(serverStub)
         stratumSocket.sendRx(Command.create(123, "server.version", "2.9.2", "0.10"))
                 .testBlockingFirst()
@@ -78,10 +78,10 @@ class StratumSocketRxReceiveTests {
 
     @Test
     fun serverVersion2CallsSomethingElsePushedOnWire2() {
-        val serverStub = ServerStub()
-                .on(
-                        { c -> c.method == "server.version" }
-                ) { c -> "{\"jsonrpc\": \"2.0\", \"id\": " + c.id + ", \"result\": \"ElectrumX 1.2\"}" }
+        val serverStub = serverStub {
+            on { c -> c.method == "server.version" } returns
+                    { c -> "{\"jsonrpc\": \"2.0\", \"id\": " + c.id + ", \"result\": \"ElectrumX 1.2\"}" }
+        }
         val stratumSocket = givenSocket(serverStub)
         stratumSocket.sendRx(Command.create(123, "server.version", "2.9.2", "0.10"))
                 .testBlockingFirst()
@@ -98,10 +98,10 @@ class StratumSocketRxReceiveTests {
 
     @Test
     fun serverVersionTyped() {
-        val serverStub = ServerStub()
-                .on(
-                        { c -> c.method == "server.version" }
-                ) { c -> "{\"jsonrpc\": \"2.0\", \"id\": " + c.id + ", \"result\": \"ElectrumX 1.2\"}" }
+        val serverStub = serverStub {
+            on { c -> c.method == "server.version" } returns
+                    { c -> "{\"jsonrpc\": \"2.0\", \"id\": " + c.id + ", \"result\": \"ElectrumX 1.2\"}" }
+        }
         val stratumSocket = givenSocket(serverStub)
         stratumSocket.sendRx(ServerVersion::class.java, "server.version", "2.9.2", 10)
                 .testBlockingFirst()
@@ -110,14 +110,14 @@ class StratumSocketRxReceiveTests {
 
     @Test
     fun sendRxAcceptsObjects() {
-        val serverStub = ServerStub()
-                .on(
-                        { c ->
-                            c.method == "server.version" &&
-                                    c.getParam(0) == "2.9.2" &&
-                                    (c.getParam(1) as Double).toInt() == 10
-                        }
-                ) { c -> "{\"jsonrpc\": \"2.0\", \"id\": " + c.id + ", \"result\": \"ElectrumX 1.2\"}" }
+        val serverStub = serverStub {
+            on { c ->
+                c.method == "server.version" &&
+                        c.getParam(0) == "2.9.2" &&
+                        (c.getParam(1) as Double).toInt() == 10
+            } returns
+                    { c -> "{\"jsonrpc\": \"2.0\", \"id\": " + c.id + ", \"result\": \"ElectrumX 1.2\"}" }
+        }
         val stratumSocket = givenSocket(serverStub)
         stratumSocket.sendRx(ServerVersion::class.java, "server.version", "2.9.2", 10)
                 .testBlockingFirst()
@@ -126,13 +126,12 @@ class StratumSocketRxReceiveTests {
 
     @Test
     fun idIsAutomaticallyIncremented() {
-        val serverStub = ServerStub()
-                .on(
-                        { c -> c.method == "server.version" && c.id == 0 }
-                ) { c -> "{\"jsonrpc\": \"2.0\", \"id\": " + c.id + ", \"result\": \"ElectrumX 1.2\"}" }
-                .on(
-                        { c -> c.method == "server.version" && c.id == 1 }
-                ) { c -> "{\"jsonrpc\": \"2.0\", \"id\": " + c.id + ", \"result\": \"ElectrumX 2.3\"}" }
+        val serverStub = serverStub {
+            on { c -> c.method == "server.version" && c.id == 0 } returns
+                    { c -> "{\"jsonrpc\": \"2.0\", \"id\": " + c.id + ", \"result\": \"ElectrumX 1.2\"}" }
+            on { c -> c.method == "server.version" && c.id == 1 } returns
+                    { c -> "{\"jsonrpc\": \"2.0\", \"id\": " + c.id + ", \"result\": \"ElectrumX 2.3\"}" }
+        }
         val stratumSocket = givenSocket(serverStub)
         stratumSocket.sendRx(ServerVersion::class.java, "server.version", "2.9.2", "0.10")
                 .testBlockingFirst()
