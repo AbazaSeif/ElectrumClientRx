@@ -42,7 +42,7 @@ class ServerStubTests {
     @Throws(IOException::class)
     fun canSetupAResponse() {
         val serverStub = ServerStub()
-                .`when`(
+                .on(
                         { c -> c.method == "a" }
                 ) { c -> Response(c.id, "a.response") }
         serverStub.input.println(Command.create(123, "a"))
@@ -53,7 +53,7 @@ class ServerStubTests {
     @Throws(IOException::class)
     fun canSetupAResponseWithStringDirect() {
         val serverStub = ServerStub()
-                .`when`(
+                .on(
                         { c -> c.method == "a" }
                 ) { c -> "{\"id\":1,\"method\":\"blockchain.numblocks.subscribe\",\"params\":[]}" }
         serverStub.input.println(Command.create(123, "a"))
@@ -65,9 +65,9 @@ class ServerStubTests {
     @Throws(IOException::class)
     fun canSetupTwoResponses() {
         val serverStub = ServerStub()
-                .`when`(
+                .on(
                         { c -> c.id == 1 }
-                ) { c -> Response(c.id, "x") }.`when`(
+                ) { c -> Response(c.id, "x") }.on(
                 { c -> c.id == 2 }
         ) { c -> Response(c.id, "y") }
         serverStub.input.println(Command.create(2, "a"))

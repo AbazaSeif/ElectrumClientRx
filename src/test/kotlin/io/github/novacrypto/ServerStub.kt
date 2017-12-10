@@ -108,7 +108,7 @@ class ServerStub {
             val map: (Command) -> Any
     )
 
-    fun `when`(commandPredicate: (Command) -> Boolean, map: (Command) -> Any): ServerStub {
+    fun on(commandPredicate: (Command) -> Boolean, map: (Command) -> Any): ServerStub {
         cannedResponses.add(CannedResponse(commandPredicate, map))
         return this
     }
