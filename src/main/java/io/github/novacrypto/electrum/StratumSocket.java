@@ -47,9 +47,7 @@ public final class StratumSocket {
                 .map(new Function<String, Response>() {
                     @Override
                     public Response apply(final String json) throws Exception {
-                        final ResponseDTO rdto = new Gson().fromJson(json, ResponseDTO.class);
-
-                        return new Response(rdto.id, json);
+                        return new Response(new Gson().fromJson(json, ResponseDTO.class).id, json);
                     }
                 });
     }
@@ -81,7 +79,7 @@ public final class StratumSocket {
         out.println(command);
     }
 
-    private class ResponseDTO {
+    private static class ResponseDTO {
         int id;
     }
 
