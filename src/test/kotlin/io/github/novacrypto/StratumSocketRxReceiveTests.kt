@@ -22,13 +22,14 @@
 package io.github.novacrypto
 
 import io.github.novacrypto.electrum.Command
-import io.github.novacrypto.electrum.StratumSocket
-import io.reactivex.Observable
-import io.reactivex.Single
-import io.reactivex.observers.TestObserver
+import org.junit.Rule
 import org.junit.Test
 
 class StratumSocketRxReceiveTests {
+
+    @get:Rule
+    @Suppress("unused")
+    val ioSchedulerTrampoline = ioSchedulerTrampoline()
 
     @Test
     fun serverVersion() {
@@ -37,12 +38,8 @@ class StratumSocketRxReceiveTests {
                     { c -> "{\"jsonrpc\": \"2.0\", \"id\": " + c.id + ", \"result\": \"ElectrumX 1.2\"}" }
         }
         givenSocket(serverStub).sendRx(Command.create(456, "server.version", "2.9.2", "0.10"))
-                .testBlockingFirst()
+                .test()
                 .assertValue("{\"jsonrpc\": \"2.0\", \"id\": 456, \"result\": \"ElectrumX 1.2\"}")
-    }
-
-    private fun givenSocket(serverStub: ServerStub): StratumSocket {
-        return StratumSocket(serverStub.input, serverStub.output)
     }
 
     @Test
@@ -53,10 +50,10 @@ class StratumSocketRxReceiveTests {
         }
         val stratumSocket = givenSocket(serverStub)
         stratumSocket.sendRx(Command.create(123, "server.version", "2.9.2", "0.10"))
-                .testBlockingFirst()
+                .test()
                 .assertValue("{\"jsonrpc\": \"2.0\", \"id\": 123, \"result\": \"ElectrumX 1.2\"}")
         stratumSocket.sendRx(Command.create(456, "server.version", "2.9.2", "0.10"))
-                .testBlockingFirst()
+                .test()
                 .assertValue("{\"jsonrpc\": \"2.0\", \"id\": 456, \"result\": \"ElectrumX 1.2\"}")
     }
 
@@ -68,11 +65,11 @@ class StratumSocketRxReceiveTests {
         }
         val stratumSocket = givenSocket(serverStub)
         stratumSocket.sendRx(Command.create(123, "server.version", "2.9.2", "0.10"))
-                .testBlockingFirst()
+                .test()
                 .assertValue("{\"jsonrpc\": \"2.0\", \"id\": 123, \"result\": \"ElectrumX 1.2\"}")
         serverStub.printlnOnOutput("{\"jsonrpc\": \"2.0\", \"id\": 999, \"result\": \"ElectrumX 1.2\"}")
         stratumSocket.sendRx(Command.create(456, "server.version", "2.9.2", "0.10"))
-                .testBlockingFirst()
+                .test()
                 .assertValue("{\"jsonrpc\": \"2.0\", \"id\": 456, \"result\": \"ElectrumX 1.2\"}")
     }
 
@@ -84,11 +81,11 @@ class StratumSocketRxReceiveTests {
         }
         val stratumSocket = givenSocket(serverStub)
         stratumSocket.sendRx(Command.create(123, "server.version", "2.9.2", "0.10"))
-                .testBlockingFirst()
+                .test()
                 .assertValue("{\"jsonrpc\": \"2.0\", \"id\": 123, \"result\": \"ElectrumX 1.2\"}")
         serverStub.printlnOnOutput("{\"jsonrpc\": \"2.0\", \"id\": 4567, \"result\": \"ElectrumX 1.2\"}")
         stratumSocket.sendRx(Command.create(456, "server.version", "2.9.2", "0.10"))
-                .testBlockingFirst()
+                .test()
                 .assertValue("{\"jsonrpc\": \"2.0\", \"id\": 456, \"result\": \"ElectrumX 1.2\"}")
     }
 
@@ -104,7 +101,7 @@ class StratumSocketRxReceiveTests {
         }
         val stratumSocket = givenSocket(serverStub)
         stratumSocket.sendRx(ServerVersion::class.java, "server.version", "2.9.2", 10)
-                .testBlockingFirst()
+                .test()
                 .assertValue { v -> v.result == "ElectrumX 1.2" }
     }
 
@@ -120,7 +117,7 @@ class StratumSocketRxReceiveTests {
         }
         val stratumSocket = givenSocket(serverStub)
         stratumSocket.sendRx(ServerVersion::class.java, "server.version", "2.9.2", 10)
-                .testBlockingFirst()
+                .test()
                 .assertValue { v -> v.result == "ElectrumX 1.2" }
     }
 
@@ -134,17 +131,10 @@ class StratumSocketRxReceiveTests {
         }
         val stratumSocket = givenSocket(serverStub)
         stratumSocket.sendRx(ServerVersion::class.java, "server.version", "2.9.2", "0.10")
-                .testBlockingFirst()
+                .test()
                 .assertValue { v -> v.result == "ElectrumX 1.2" }
         stratumSocket.sendRx(ServerVersion::class.java, "server.version", "2.9.2", "0.10").
-                testBlockingFirst()
+                test()
                 .assertValue { v -> v.result == "ElectrumX 2.3" }
     }
 }
-
-fun <T> Observable<T>.testBlockingFirst(n: Int): TestObserver<T> =
-        Observable.fromIterable(
-                this.take(n.toLong()).blockingIterable()
-        ).test()
-
-fun <T> Single<T>.testBlockingFirst(): TestObserver<T> = this.toObservable().testBlockingFirst(1)

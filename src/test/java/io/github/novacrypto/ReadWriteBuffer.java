@@ -32,6 +32,7 @@ class ReadWriteBuffer {
     final Reader reader;
     final BufferedReader bufferedReader;
     final PrintWriter printWriter;
+    private IOException throwable;
 
     ReadWriteBuffer() {
         printWriter = new PrintWriter(new Writer() {
@@ -53,6 +54,9 @@ class ReadWriteBuffer {
 
             @Override
             public int read(char[] cbuf, int off, int len) throws IOException {
+                if (throwable != null) {
+                    throw throwable;
+                }
                 if (pos >= shared.length()) {
                     return end.get();
                 }
@@ -73,5 +77,9 @@ class ReadWriteBuffer {
     ReadWriteBuffer dontTerminateWhenEmpty() {
         end.set(0);
         return this;
+    }
+
+    public void kill(IOException throwable) {
+        this.throwable = throwable;
     }
 }

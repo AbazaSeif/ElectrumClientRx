@@ -23,6 +23,7 @@ package io.github.novacrypto
 
 import com.google.gson.Gson
 import io.github.novacrypto.electrum.Command
+import io.github.novacrypto.electrum.LineReader
 import java.io.*
 import java.util.*
 
@@ -91,7 +92,6 @@ class ServerStub {
         }
     }
 
-    val output: Reader = outputBuffer.reader
     val outputBufferedReader: BufferedReader = outputBuffer.bufferedReader
 
     private val cannedResponses = ArrayList<CannedResponse>()
@@ -119,6 +119,17 @@ class ServerStub {
     }
 
     fun newSetup() = InnerSetUp()
+
+    val lineReader = object : LineReader {
+
+        private var closed = false
+
+        override fun readLine() = if (closed) null else outputBufferedReader.readLine()
+
+        override fun close() {
+            closed = true
+        }
+    }
 }
 
 infix fun ServerStub.PartialResultMap.returns(result: (Command) -> Any) = this._returns(result)

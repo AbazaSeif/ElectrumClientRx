@@ -22,28 +22,28 @@
 package io.github.novacrypto.electrum;
 
 import com.google.gson.Gson;
+import io.reactivex.Maybe;
 import io.reactivex.Observable;
 import io.reactivex.ObservableEmitter;
 import io.reactivex.ObservableOnSubscribe;
-import io.reactivex.Single;
 import io.reactivex.functions.Function;
 import io.reactivex.functions.Predicate;
 import io.reactivex.schedulers.Schedulers;
 
-import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.io.Reader;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public final class StratumSocket {
+public final class StratumSocket implements AutoCloseable {
     private final PrintWriter out;
     private final Observable<Response> feed;
     private final AtomicInteger id = new AtomicInteger();
+    private final AutoCloseable input;
 
-    public StratumSocket(final PrintWriter out, final Reader input) {
+    public StratumSocket(final PrintWriter out, final LineReader input) {
+        this.input = input;
         this.out = out;
-        feed = observeReader(new BufferedReader(input))
+        feed = observeReader(input)
                 .map(new Function<String, Response>() {
                     @Override
                     public Response apply(final String json) throws Exception {
@@ -52,7 +52,7 @@ public final class StratumSocket {
                 });
     }
 
-    private static Observable<String> observeReader(final BufferedReader reader) {
+    private static Observable<String> observeReader(final LineReader reader) {
         final ObservableOnSubscribe<String> tObservableOnSubscribe = new ObservableOnSubscribe<String>() {
             @Override
             public void subscribe(final ObservableEmitter<String> subscriber) {
@@ -64,6 +64,7 @@ public final class StratumSocket {
                         subscriber.onNext(line);
                     }
                 } catch (final IOException e) {
+                    System.out.println("error " + e.getClass());
                     subscriber.onError(e);
                 }
                 System.out.println("Completed");
@@ -79,11 +80,16 @@ public final class StratumSocket {
         out.println(command);
     }
 
+    @Override
+    public void close() throws Exception {
+        input.close();
+    }
+
     private static class ResponseDTO {
         int id;
     }
 
-    private class Response {
+    public class Response {
         final int id;
         final String json;
 
@@ -93,16 +99,16 @@ public final class StratumSocket {
         }
     }
 
-    private Single<Response> responseForId(final int id) {
-        return Single.fromObservable(feed.filter(new Predicate<Response>() {
+    private Maybe<Response> responseForId(final int id) {
+        return feed.filter(new Predicate<Response>() {
             @Override
             public boolean test(final Response r) {
                 return r.id == id;
             }
-        }).take(1));
+        }).firstElement();
     }
 
-    public Single<String> sendRx(final Command command) {
+    public Maybe<String> sendRx(final Command command) {
         send(command);
         return responseForId(command.getId())
                 .map(new Function<Response, String>() {
@@ -113,7 +119,7 @@ public final class StratumSocket {
                 });
     }
 
-    public <Result> Single<Result> sendRx(final Class<Result> clazz, final String method, final Object... params) {
+    public <Result> Maybe<Result> sendRx(final Class<Result> clazz, final String method, final Object... params) {
         final Command command = Command.create(id.getAndIncrement(), method, params);
         send(command);
         return responseForId(command.getId())
