@@ -23,14 +23,12 @@ package io.github.novacrypto
 
 import com.google.gson.Gson
 import io.github.novacrypto.electrum.Command
-import org.junit.Test
-
-import java.io.IOException
-
 import org.junit.Assert.assertEquals
+import org.junit.Test
 
 class ServerStubTests {
 
+    @Suppress("unused")
     internal inner class Response(private val id: Int, private val result: String) {
 
         override fun toString(): String {
@@ -39,7 +37,7 @@ class ServerStubTests {
     }
 
     @Test
-    fun canSetupAResponse() {
+    fun `can setup a response`() {
         val serverStub = serverStub {
             on { c -> c.method == "a" } returns
                     { c -> Response(c.id, "a.response") }
@@ -49,10 +47,10 @@ class ServerStubTests {
     }
 
     @Test
-    fun canSetupAResponseWithStringDirect() {
+    fun `can setup a response with String direct`() {
         val serverStub = serverStub {
             on { c -> c.method == "a" } returns
-                    { c -> "{\"id\":1,\"method\":\"blockchain.numblocks.subscribe\",\"params\":[]}" }
+                    { "{\"id\":1,\"method\":\"blockchain.numblocks.subscribe\",\"params\":[]}" }
         }
         serverStub.input.println(Command.create(123, "a"))
         assertEquals("{\"id\":1,\"method\":\"blockchain.numblocks.subscribe\",\"params\":[]}",
@@ -60,7 +58,7 @@ class ServerStubTests {
     }
 
     @Test
-    fun canSetupTwoResponses() {
+    fun `can setup two responses`() {
         val serverStub = serverStub {
             on { c -> c.id == 1 } returns
                     { c -> Response(c.id, "x") }
@@ -74,7 +72,7 @@ class ServerStubTests {
     }
 
     @Test
-    fun canPutSomethingOnWireDirectly() {
+    fun `can put something on wire directly`() {
         val serverStub = ServerStub()
         serverStub.printlnOnOutput(Response(123, "a.response"))
         assertEquals(Response(123, "a.response").toString(), serverStub.outputBufferedReader.readLine())
